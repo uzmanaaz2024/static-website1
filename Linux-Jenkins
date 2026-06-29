@@ -1,0 +1,74 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = "static-website"
+        CONTAINER_NAME = "static-web"
+        HOST_PORT = "9090"
+        CONTAINER_PORT = "80"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/uzmanaaz2024/static-website1.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    docker build -t ${IMAGE_NAME}:latest .
+                '''
+            }
+        }
+
+        stage('Run Container') {
+            steps {
+                sh '''
+                    # Stop and remove old container if it exists
+                    docker stop ${CONTAINER_NAME} >/dev/null 2>&1 || true
+                    docker rm ${CONTAINER_NAME} >/dev/null 2>&1 || true
+
+                    # Run new container
+                    docker run -d \
+                        --name ${CONTAINER_NAME} \
+                        -p ${HOST_PORT}:${CONTAINER_PORT} \
+                        ${IMAGE_NAME}:latest
+                '''
+            }
+        }
+
+        stage('Verify Container') {
+            steps {
+                sh '''
+                    echo "Running Containers:"
+                    docker ps
+
+                    echo "Docker Images:"
+                    docker images
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "======================================="
+            echo "Pipeline completed successfully!"
+            echo "Website URL:"
+            echo "http://13.206.69.239:9090"
+            echo "======================================="
+        }
+
+        failure {
+            echo "Pipeline failed. Check the console output."
+        }
+
+        always {
+            echo "Build Finished."
+        }
+    }
+}
